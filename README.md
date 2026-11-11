@@ -93,6 +93,8 @@ return [
 
 - 打开/切换/关闭标签后，把当前标签 iframe 的路由写入父窗口 URL 的 hash（`#/admin/users?x=1`），使用 `history.replaceState`，不产生多余历史记录
 - 刷新时读取 hash 恢复标签：优先复用左侧菜单点击；菜单里没有的深层路由直接构造标签
+- 标签标题随路由缓存到 `sessionStorage`，刷新后恢复中文标题（如「广告主账号」），不会退化成 `advertiser_users` 之类的 URL slug
+- 菜单匹配按同源归一化地址比较，兼容绝对 URL 与 query 差异
 - 监听 `hashchange`，支持手动改 hash / 前进后退
 - 只接受同源站内路径，拒绝 `javascript:`、`data:`、`//外部域`、跨源地址与 `logout`
 

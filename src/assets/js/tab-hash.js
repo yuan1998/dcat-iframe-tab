@@ -14,6 +14,8 @@ $(function () {
     var template = parent.iframeTabTemplate;
     var swiper = parent.swiper;
     var elements = parent.elements;
+    var TITLE_KEY_PREFIX = 'dcat-iframe-tab-title:';
+    var MENU_SELECTOR = '.main-menu a[href], .main-sidebar a[href], .dropdown-menu a[href]';
 
     /* 只接受同源站内地址，避免外部页面/伪协议被写入 iframe */
     function safeUrl(raw) {
@@ -34,12 +36,38 @@ $(function () {
         return parsed.pathname + parsed.search + parsed.hash;
     }
 
-    /* 当前激活标签页对应的 iframe 地址 */
+    function pathOf(url) {
+        return url.split('?')[0].split('#')[0];
+    }
+
+    /* 当前激活标签页对应的 iframe 地址与标题 */
     function activeUrl() {
         var $active = elements.iframe_tab.find('.nav-link.active').first();
         if (!$active.length) return '';
         var $iframe = $($active.attr('href')).find('> iframe').first();
         return safeUrl($iframe.attr('src'));
+    }
+
+    function activeTitle() {
+        var $active = elements.iframe_tab.find('.nav-link.active').first();
+        if (!$active.length) return '';
+        return String($active.text() || '').trim();
+    }
+
+    /* 标签标题与路由一起缓存，刷新后恢复时不必退化成 URL slug */
+    function cacheTitle(url, title) {
+        if (!url || !title) return;
+        try {
+            window.sessionStorage.setItem(TITLE_KEY_PREFIX + url, title);
+        } catch (e) {}
+    }
+
+    function cachedTitle(url) {
+        try {
+            return window.sessionStorage.getItem(TITLE_KEY_PREFIX + url) || '';
+        } catch (e) {
+            return '';
+        }
     }
 
     function writeHash(url) {
@@ -55,8 +83,31 @@ $(function () {
         }
     }
 
+    /* 按规范化地址找菜单项：菜单 href 可能是绝对地址或带额外参数 */
+    function findMenuLink(url) {
+        var links = document.querySelectorAll(MENU_SELECTOR);
+        var target = safeUrl(url);
+        var targetPath = pathOf(target);
+        var i, href, normalized;
+
+        for (i = 0; i < links.length; i++) {
+            href = links[i].getAttribute('href');
+            normalized = safeUrl(href);
+            if (normalized && normalized === target) return $(links[i]);
+        }
+        /* 退化为路径匹配，兼容 query 差异 */
+        for (i = 0; i < links.length; i++) {
+            href = links[i].getAttribute('href');
+            normalized = safeUrl(href);
+            if (normalized && pathOf(normalized) === targetPath) return $(links[i]);
+        }
+        return null;
+    }
+
     function syncHash() {
-        writeHash(activeUrl());
+        var url = activeUrl();
+        cacheTitle(url, activeTitle());
+        writeHash(url);
     }
 
     /* 按地址打开/激活标签页 */
@@ -64,22 +115,25 @@ $(function () {
         url = safeUrl(url);
         if (!url) return;
 
-        var id = tab.generateID(url);
+        var $menu = findMenuLink(url);
+        var tabUrl = $menu ? ($menu.attr('href') || url) : url;
+        var id = tab.generateID(tabUrl);
+
         var $exists = elements.iframe_tab.find('#iframe-home-' + id);
         if ($exists.length) {
             $exists.click();
             return;
         }
-
         /* 菜单里存在该路由时交给 base.js 创建，可复用菜单标题与高亮 */
-        var $menu = $('.main-menu a[href="' + url + '"], .dropdown-menu a[href="' + url + '"]').first();
-        if ($menu.length) {
+        if ($menu) {
             $menu.click();
             return;
         }
 
-        /* 详情页等无菜单项的路由：直接构造标签页 */
-        var title = url.split('?')[0].split('/').filter(Boolean).pop() || url;
+        /* 无菜单项的路由：优先用刷新前缓存的标签标题，避免显示 URL slug */
+        var title = cachedTitle(url);
+        if (!title) title = url;
+
         swiper.appendSlide(template.tabItem(title, id));
         elements.iframe_tabContent.append(template.tabContentItem(url, id));
 
@@ -104,7 +158,7 @@ $(function () {
     }
 
     /* 委托事件晚于 base.js 的同事件绑定，等 DOM 状态更新后再同步 */
-    $(document).on('click', '.main-menu a[href], .dropdown-menu a[href]', function () {
+    $(document).on('click', MENU_SELECTOR, function () {
         setTimeout(syncHash, 0);
     });
     $(document).on('click', '#iframe-tab .nav-link', function () {
