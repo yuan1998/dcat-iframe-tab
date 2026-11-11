@@ -106,4 +106,16 @@ return [
 - `tests/tab-hash.node.js`：无浏览器逻辑测试，`node tests/tab-hash.node.js [JS路径]`
 
 更新项目已发布资源：`php artisan vendor:publish --tag=iframe-tab --force`。该命令会覆盖 `resources/views/vendor/iframe-tab/` 下自定义过的视图，需要重新合并自定义内容。
+
+## 安装（本 fork）
+
+本 fork 已改名为 `yuan1998/dcat-iframe-tab`，可发布到 Packagist：
+
+```
+composer remove mosiboom/dcat-iframe-tab
+composer require yuan1998/dcat-iframe-tab:^1.2.4
+php artisan vendor:publish --tag=iframe-tab --force
+```
+
+PHP 命名空间与 ServiceProvider 仍为 `Mosiboom\DcatIframeTab\`（Laravel 自动发现按类名工作，与 composer 包名无关），所以视图、配置与 helper 均无需改动；`vendor:publish --force` 会覆盖已发布视图，需重新合并项目自定义内容（如 `sidebar-dark-white`）。
     
