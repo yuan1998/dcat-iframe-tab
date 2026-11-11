@@ -86,6 +86,7 @@
 <script src="{{asset('/vendor/iframe-tab/js/swiper.min.js')}}"></script>
 <script src="{{asset('/vendor/iframe-tab/js/base.js')}}"></script>
 <script src="{{asset('/vendor/iframe-tab/js/extend.js')}}"></script>
+<script src="{{asset('/vendor/iframe-tab/js/tab-hash.js')}}"></script>
 @if(isset(config('iframe_tab')['footer_setting']['use_menu'])&&config('iframe_tab')['footer_setting']['use_menu']==true)
     <script>
         let html = $('#footer-template').html()

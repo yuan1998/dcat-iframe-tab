@@ -86,4 +86,22 @@ return [
 ```html
 <a iframe-extends=true iframe-tab=true href="https://github.com/mosiboom/dcat-iframe-tab">添加新的标签页</a>
 ```
+
+## 本 Fork 的改动：标签页路由 hash
+
+上游 1.2.1 在未开启标签缓存时，每次刷新父窗口只重建首页标签，会回到后台首页。本 Fork 新增 `tab-hash.js`：
+
+- 打开/切换/关闭标签后，把当前标签 iframe 的路由写入父窗口 URL 的 hash（`#/admin/users?x=1`），使用 `history.replaceState`，不产生多余历史记录
+- 刷新时读取 hash 恢复标签：优先复用左侧菜单点击；菜单里没有的深层路由直接构造标签
+- 监听 `hashchange`，支持手动改 hash / 前进后退
+- 只接受同源站内路径，拒绝 `javascript:`、`data:`、`//外部域`、跨源地址与 `logout`
+
+相关文件：
+
+- `src/assets/js/tab-hash.js`：源码
+- `src/assets/js/compress/tab-hash.js`：`vendor:publish` 发布到 `public/vendor/iframe-tab/js/tab-hash.js`
+- `src/resource/views/vertical.blade.php`：在 `base.js` 之后引入补丁
+- `tests/tab-hash.node.js`：无浏览器逻辑测试，`node tests/tab-hash.node.js [JS路径]`
+
+更新项目已发布资源：`php artisan vendor:publish --tag=iframe-tab --force`。该命令会覆盖 `resources/views/vendor/iframe-tab/` 下自定义过的视图，需要重新合并自定义内容。
     
